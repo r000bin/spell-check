@@ -33,6 +33,7 @@
   let dictReady = false;
   let customDict = loadCustomDict();
   let professionalDict = {}; // { lang: Set of words }
+  let checkCapitalization = false;
   let activeTextarea = null;
   let debounceTimer = null;
   let currentMisspelledSpan = null;
@@ -47,6 +48,7 @@
   const dictStatus = document.getElementById('dict-status');
   const dictCount = document.getElementById('dict-count');
   const overlayInfo = document.getElementById('overlay-info');
+  const checkCapCheckbox = document.getElementById('check-capitalization');
   const btnExport = document.getElementById('btn-export-dict');
   const btnClear = document.getElementById('btn-clear-dict');
 
@@ -171,7 +173,43 @@
     if (/^\d+$/.test(clean)) return true;
     if (isInCustomDict(clean, currentLang)) return true;
     if (isInProfessionalDict(clean, currentLang)) return true;
-    return typoInstance.check(clean);
+
+    // Basic spell check
+    const spellingOk = typoInstance.check(clean);
+    if (!spellingOk) return false;
+
+    // Capitalization check (German: nouns must be capitalized)
+    if (checkCapitalization && currentLang === 'de') {
+      return checkGermanCapitalization(clean);
+    }
+
+    return true;
+  }
+
+  function checkGermanCapitalization(word) {
+    // Skip short words, abbreviations (all caps), and already-capitalized words
+    if (word.length < 2) return true;
+    if (word === word.toUpperCase()) return true; // ALL CAPS = abbreviation
+
+    const isCapitalized = word[0] === word[0].toUpperCase();
+    const lowered = word[0].toLowerCase() + word.slice(1);
+    const capitalized = word[0].toUpperCase() + word.slice(1);
+
+    // Check if word exists only in capitalized form → should be capitalized
+    const capitalizedExists = typoInstance.check(capitalized);
+    const loweredExists = typoInstance.check(lowered);
+
+    if (capitalizedExists && !loweredExists && !isCapitalized) {
+      // Word only exists capitalized (likely a noun) but was written lowercase
+      return false;
+    }
+    if (!capitalizedExists && loweredExists && isCapitalized) {
+      // Word only exists lowercase but was written capitalized (not at sentence start)
+      // We can't reliably detect sentence starts here, so we allow it
+      return true;
+    }
+
+    return true;
   }
 
   function getSuggestions(word) {
@@ -442,7 +480,21 @@
   function openOverlay(textarea) {
     activeTextarea = textarea;
     overlay.classList.remove('hidden');
-    editor.innerHTML = '';
+
+    // Load existing text from textarea into editor
+    const existingText = textarea.value || '';
+    if (existingText) {
+      editor.innerText = existingText;
+      // Run highlighting after a tick so the text is rendered
+      setTimeout(() => {
+        highlightEditor();
+        // Place caret at end
+        setCaretOffset(editor, existingText.length);
+      }, 50);
+    } else {
+      editor.innerHTML = '';
+    }
+
     editor.focus();
     updateOverlayInfo();
   }
@@ -456,20 +508,8 @@
 
   function applyText() {
     if (!activeTextarea) return;
-    const newText = editor.innerText || '';
-    if (!newText.trim()) {
-      closeOverlay();
-      return;
-    }
-
-    const existing = activeTextarea.value;
-    if (existing && !existing.endsWith('\n') && !existing.endsWith(' ')) {
-      activeTextarea.value = existing + ' ' + newText;
-    } else {
-      activeTextarea.value = existing + newText;
-    }
-
-    // Trigger input event so any listeners on the textarea are notified
+    const text = editor.innerText || '';
+    activeTextarea.value = text;
     activeTextarea.dispatchEvent(new Event('input', { bubbles: true }));
     closeOverlay();
   }
@@ -528,6 +568,12 @@
       e.preventDefault();
       applyText();
     }
+  });
+
+  // Capitalization check toggle
+  checkCapCheckbox.addEventListener('change', (e) => {
+    checkCapitalization = e.target.checked;
+    highlightEditor();
   });
 
   // Language switch

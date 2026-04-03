@@ -48,7 +48,13 @@
     <div class="overlay-content">
       <div class="overlay-header">
         <h2>Rechtschreibprüfung</h2>
-        <span id="overlay-info" class="overlay-info"></span>
+        <div class="overlay-options">
+          <label class="checkbox-label" for="check-capitalization">
+            <input type="checkbox" id="check-capitalization">
+            <span>Groß-/Kleinschreibung</span>
+          </label>
+          <span id="overlay-info" class="overlay-info"></span>
+        </div>
       </div>
       <div id="editor" class="editor" contenteditable="true" spellcheck="false"></div>
       <div id="suggestions" class="suggestions hidden"></div>
