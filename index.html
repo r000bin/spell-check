@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpellCheck – Lokaler Rechtschreibprüfer</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>SpellCheck</h1>
+      <p class="subtitle">Klicke auf ein Textfeld, um die Rechtschreibprüfung zu öffnen.</p>
+      <div class="language-switcher">
+        <label for="lang-select">Sprache:</label>
+        <select id="lang-select">
+          <option value="de" selected>Deutsch</option>
+          <option value="en">English</option>
+        </select>
+        <span id="dict-status" class="dict-status">Wörterbuch wird geladen…</span>
+      </div>
+    </header>
+
+    <main>
+      <div class="field-group">
+        <label for="field1">Notizen</label>
+        <textarea id="field1" class="spell-target" rows="4" spellcheck="false" placeholder="Klicken zum Bearbeiten mit Rechtschreibprüfung…"></textarea>
+      </div>
+      <div class="field-group">
+        <label for="field2">Nachricht</label>
+        <textarea id="field2" class="spell-target" rows="4" spellcheck="false" placeholder="Klicken zum Bearbeiten mit Rechtschreibprüfung…"></textarea>
+      </div>
+      <div class="field-group">
+        <label for="field3">Beschreibung</label>
+        <textarea id="field3" class="spell-target" rows="6" spellcheck="false" placeholder="Klicken zum Bearbeiten mit Rechtschreibprüfung…"></textarea>
+      </div>
+    </main>
+
+    <footer>
+      <p>Wörterbuch: <strong id="dict-count">0</strong> eigene Wörter gespeichert</p>
+      <button id="btn-export-dict" class="btn-small">Wörterbuch exportieren</button>
+      <button id="btn-clear-dict" class="btn-small btn-danger">Wörterbuch löschen</button>
+    </footer>
+  </div>
+
+  <!-- Spell-Check Overlay -->
+  <div id="overlay" class="overlay hidden">
+    <div class="overlay-content">
+      <div class="overlay-header">
+        <h2>Rechtschreibprüfung</h2>
+        <span id="overlay-info" class="overlay-info"></span>
+      </div>
+      <div id="editor" class="editor" contenteditable="true" spellcheck="false"></div>
+      <div id="suggestions" class="suggestions hidden"></div>
+      <div class="overlay-footer">
+        <button id="btn-cancel" class="btn btn-secondary">Abbrechen</button>
+        <button id="btn-apply" class="btn btn-primary">Übernehmen</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/typo-js@1.2.4/typo.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
