@@ -22,11 +22,17 @@
 
   const STORAGE_KEY = 'spellcheck_custom_dict';
 
+  // Professional dictionaries to load at startup
+  const PROFESSIONAL_DICTS = [
+    'data/kfo-fachbegriffe.json',
+  ];
+
   // ── State ──────────────────────────────────────────────────────────
   let currentLang = 'de';
   let typoInstance = null;
   let dictReady = false;
   let customDict = loadCustomDict();
+  let professionalDict = {}; // { lang: Set of words }
   let activeTextarea = null;
   let debounceTimer = null;
   let currentMisspelledSpan = null;
@@ -73,12 +79,49 @@
     return customDict[lang].includes(word.toLowerCase());
   }
 
+  function isInProfessionalDict(word, lang) {
+    if (!professionalDict[lang]) return false;
+    return professionalDict[lang].has(word) || professionalDict[lang].has(word.toLowerCase());
+  }
+
   function updateDictCount() {
-    const count = Object.values(customDict).reduce(
+    const customCount = Object.values(customDict).reduce(
       (sum, arr) => sum + arr.length,
       0
     );
-    dictCount.textContent = count;
+    const proCount = Object.values(professionalDict).reduce(
+      (sum, set) => sum + set.size,
+      0
+    );
+    dictCount.textContent = customCount;
+    // Update professional dict info if element exists
+    const proEl = document.getElementById('pro-dict-count');
+    if (proEl) proEl.textContent = proCount;
+  }
+
+  // ── Professional Dictionaries ──────────────────────────────────────
+  async function loadProfessionalDicts() {
+    for (const url of PROFESSIONAL_DICTS) {
+      try {
+        const resp = await fetch(url);
+        if (!resp.ok) continue;
+        const data = await resp.json();
+        const lang = data.lang || 'de';
+        if (!professionalDict[lang]) professionalDict[lang] = new Set();
+
+        if (data.terms) {
+          data.terms.forEach((t) => professionalDict[lang].add(t));
+        }
+        if (data.abbreviations) {
+          data.abbreviations.forEach((a) => professionalDict[lang].add(a));
+        }
+
+        console.log(`Loaded professional dict "${data.name}": ${(data.terms?.length || 0) + (data.abbreviations?.length || 0)} terms`);
+      } catch (err) {
+        console.warn('Failed to load professional dict:', url, err);
+      }
+    }
+    updateDictCount();
   }
 
   // ── Dictionary Loading ─────────────────────────────────────────────
@@ -127,6 +170,7 @@
     if (!clean || clean.length < 2) return true;
     if (/^\d+$/.test(clean)) return true;
     if (isInCustomDict(clean, currentLang)) return true;
+    if (isInProfessionalDict(clean, currentLang)) return true;
     return typoInstance.check(clean);
   }
 
@@ -519,5 +563,5 @@
 
   // ── Init ───────────────────────────────────────────────────────────
   updateDictCount();
-  loadDictionary(currentLang);
+  loadProfessionalDicts().then(() => loadDictionary(currentLang));
 })();
